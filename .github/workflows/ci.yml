@@ -21,5 +21,5 @@ jobs:
     - name: Build the Docker image
       run: docker build -t aihubbe .
     - name: Push To Dockerhub
-      run: docker push mirmeherbanali/aihubbe:latest
+      run: docker push chinmayma/aihubbe:latest
       
