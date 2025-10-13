@@ -1,0 +1,23 @@
+{
+  "name": "aihubbe",
+  "version": "1.0.0",
+  "description": "centralized directory for everything in AI — tools, models, APIs, datasets, research papers, and learning resources — all in one organized place. Discover, explore, and bookmark the AI resources that matter most.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mirmeherbanali/aihubbe.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mirmeherbanali/aihubbe/issues"
+  },
+  "homepage": "https://github.com/mirmeherbanali/aihubbe#readme",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
