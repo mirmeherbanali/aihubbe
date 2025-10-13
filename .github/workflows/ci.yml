@@ -19,7 +19,8 @@ jobs:
       run: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
       
     - name: Build the Docker image
-      run: docker build -t aihubbe .
-    - name: Push To Dockerhub
-      run: docker push chinmayma/aihubbe:latest
+      run: docker build -t ${{ secrets.DOCKER_USERNAME }}/aihubbe:latest .
+
+    - name: Push to Docker Hub
+      run: docker push ${{ secrets.DOCKER_USERNAME }}/aihubbe:latest
       
