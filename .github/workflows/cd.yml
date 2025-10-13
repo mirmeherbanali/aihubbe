@@ -1,0 +1,25 @@
+name: CD Pipeline
+
+on:
+  workflow_run:
+    workflows: ["CI build"]
+    types:
+      - completed
+
+jobs:
+
+  build:
+
+    runs-on: self-hosted
+
+    steps:
+    - name: Pull Docker Image
+      run: sudo docker pull chinmayma/aihubbe:latest
+
+    - name: Delete Old docker Container
+      run: sudo docker rm -f aihubbe-container || true
+
+    - name: Run docker Container
+      run: sudo docker run -d -p 8080:8080 --name aihubbe-container chinmayma/aihubbe
+
+      
