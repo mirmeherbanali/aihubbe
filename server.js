@@ -2,6 +2,7 @@ const express = require("express");
 
 const app = express();
 
+//comment added
 app.get("/", (req, res) => {
   res.json({ status: 200, message: "Hello World" });
 });
