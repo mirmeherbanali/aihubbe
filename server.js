@@ -3,20 +3,15 @@ const mongoose = require("mongoose");
 require("dotenv").config();
 
 const app = express();
+app.use(express.json());
 
-const MONGO_URI = process.env.MONGO_URI || "mongodb://admin:admin@98.89.29.192";
+const MONGO_URI = process.env.MONGO_URI || "mongodb://admin:admin@host.docker.internal:27017/aihub";
+const PORT = process.env.PORT || 8080;
 
-const PORT = process.env.PORT || 4000;
-
-// Connection status flag
 let mongoStatus = "Disconnected";
 
-// Connect to MongoDB
 mongoose
-  .connect(MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(MONGO_URI)
   .then(() => {
     mongoStatus = "Connected ✅";
     console.log("✅ MongoDB connected");
@@ -25,7 +20,7 @@ mongoose
     mongoStatus = "Connection Failed ❌";
     console.error("❌ MongoDB connection error:", err);
   });
-// Define schema and model
+
 const itemSchema = new mongoose.Schema({
   name: { type: String, required: true },
   description: String,
@@ -33,13 +28,12 @@ const itemSchema = new mongoose.Schema({
 });
 
 const Item = mongoose.model("Item", itemSchema);
-//comment added
+
 app.get("/", (req, res) => {
-  console.log("inside items route");
+  console.log("inside root route");
   res.json({ status: 200, message: `Data: ${mongoStatus}` });
 });
 
-// Route to get all items
 app.get("/items", async (req, res) => {
   console.log("inside items route");
   try {
@@ -53,6 +47,21 @@ app.get("/items", async (req, res) => {
   }
 });
 
-app.listen(8080, () => {
-  console.log("Server is running on port 8080");
+// Optional: POST route to add items
+app.post("/items", async (req, res) => {
+  try {
+    const item = new Item({
+      name: req.body.name,
+      description: req.body.description,
+    });
+    await item.save();
+    res.json({ status: 200, data: item });
+  } catch (err) {
+    console.error("Error creating item:", err);
+    res.status(500).json({ status: 500, message: "Internal Server Error" });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
