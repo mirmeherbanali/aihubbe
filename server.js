@@ -8,7 +8,9 @@ app.use(express.json());
 // Environment variables
 const MONGO_URI =
   process.env.MONGO_URI ||
-  "mongodb+srv://chinmaymahantacm_db_user:AxpGl5ErfI9X6GQJ@aihub.k7injzq.mongodb.net/aihub?retryWrites=true&w=majority";
+  "mongodb://admin:admin@98.89.29.192";
+  // process.env.MONGO_URI ||
+  // "mongodb+srv://chinmaymahantacm_db_user:AxpGl5ErfI9X6GQJ@aihub.k7injzq.mongodb.net/aihub?retryWrites=true&w=majority";
 const PORT = process.env.PORT || 4000;
 
 // Connection status flag
