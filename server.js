@@ -17,7 +17,7 @@ mongoose
 
 //comment added
 app.get("/", (req, res) => {
-  res.json({ status: 200, message: "Hello World Updated Again" });
+  res.json({ status: 200, message: "Hello Dinesh" });
 });
 
 
