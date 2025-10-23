@@ -41,16 +41,20 @@ const itemSchema = new mongoose.Schema({
 const Item = mongoose.model("Item", itemSchema);
 
 // Root route
+// app.get("/", (req, res) => {
+//   res.send(`
+//     <div style="font-family: Arial; text-align: center; margin-top: 50px;">
+//       <h1>🚀 Server is Running!</h1>
+//       <h2>MongoDB Status: <span style="color: ${
+//         mongoStatus.includes("Connected") ? "green" : "red"
+//       };">${mongoStatus}</span></h2>
+//       <p>Time: ${new Date().toLocaleString()}</p>
+//     </div>
+//   `);
+// });
+
 app.get("/", (req, res) => {
-  res.send(`
-    <div style="font-family: Arial; text-align: center; margin-top: 50px;">
-      <h1>🚀 Server is Running!</h1>
-      <h2>MongoDB Status: <span style="color: ${
-        mongoStatus.includes("Connected") ? "green" : "red"
-      };">${mongoStatus}</span></h2>
-      <p>Time: ${new Date().toLocaleString()}</p>
-    </div>
-  `);
+  res.json({ status: 200, message: `Data: ${mongoStatus}` });
 });
 
 // Start server
