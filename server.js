@@ -25,7 +25,14 @@ mongoose
     mongoStatus = "Connection Failed ❌";
     console.error("❌ MongoDB connection error:", err);
   });
+// Define schema and model
+const itemSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  description: String,
+  createdAt: { type: Date, default: Date.now },
+});
 
+const Item = mongoose.model("Item", itemSchema);
 //comment added
 app.get("/", (req, res) => {
   res.json({ status: 200, message: "Hello Dinesh" });
