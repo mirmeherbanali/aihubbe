@@ -40,8 +40,11 @@ app.get("/", (req, res) => {
 
 // Route to get all items
 app.get("/items", async (req, res) => {
+  console.log("inside items route");
   try {
+    console.log("before fetch");
     const items = await Item.find().sort({ createdAt: -1 });
+    console.log("after fetch");
     res.json({ status: 200, data: items });
   } catch (err) {
     console.error("Error fetching items:", err);
