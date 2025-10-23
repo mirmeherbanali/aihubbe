@@ -38,6 +38,17 @@ app.get("/", (req, res) => {
   res.json({ status: 200, message: `Data: ${mongoStatus}` });
 });
 
+// Route to get all items
+app.get("/items", async (req, res) => {
+  try {
+    const items = await Item.find().sort({ createdAt: -1 });
+    res.json({ status: 200, data: items });
+  } catch (err) {
+    console.error("Error fetching items:", err);
+    res.status(500).json({ status: 500, message: "Internal Server Error" });
+  }
+});
+
 app.listen(8080, () => {
   console.log("Server is running on port 8080");
 });
