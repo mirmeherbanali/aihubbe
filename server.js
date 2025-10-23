@@ -35,7 +35,7 @@ const itemSchema = new mongoose.Schema({
 const Item = mongoose.model("Item", itemSchema);
 //comment added
 app.get("/", (req, res) => {
-  res.json({ status: 200, message: "Hello Dinesh" });
+  res.json({ status: 200, message: `Data: ${mongoStatus}` });
 });
 
 app.listen(8080, () => {
