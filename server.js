@@ -35,6 +35,7 @@ const itemSchema = new mongoose.Schema({
 const Item = mongoose.model("Item", itemSchema);
 //comment added
 app.get("/", (req, res) => {
+  console.log("inside items route");
   res.json({ status: 200, message: `Data: ${mongoStatus}` });
 });
 
