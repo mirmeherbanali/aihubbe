@@ -44,7 +44,8 @@ app.get("/items", async (req, res) => {
   console.log("inside items route");
   try {
     console.log("before fetch");
-    const items = await Item.find().sort({ createdAt: -1 });
+    // const items = await Item.find().sort({ createdAt: -1 });
+    const items = [{ name: "Test Item", description: "dummy" }];
     console.log("after fetch");
     res.json({ status: 200, data: items });
   } catch (err) {
