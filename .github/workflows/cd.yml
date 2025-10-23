@@ -7,19 +7,24 @@ on:
       - completed
 
 jobs:
-
   build:
-
     runs-on: self-hosted
 
     steps:
     - name: Pull Docker Image
       run: sudo docker pull chinmayma/aihubbe:latest
 
-    - name: Delete Old docker Container
-      run: sudo docker rm -f aihubbe-container || true
+    - name: Stop and Delete Old Container
+      run: |
+        sudo docker stop aihubbe-container || true
+        sudo docker rm -f aihubbe-container || true
 
-    - name: Run docker Container
+    - name: Cleanup Old Docker Resources
+      run: |
+        # Remove unused images, containers, volumes, and networks
+        sudo docker system prune -af
+        sudo docker volume prune -f
+        sudo docker network prune -f
+
+    - name: Run Docker Container
       run: sudo docker run -d -p 8080:8080 --name aihubbe-container chinmayma/aihubbe
-
-      
