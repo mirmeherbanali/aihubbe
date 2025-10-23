@@ -5,7 +5,7 @@ require("dotenv").config();
 const app = express();
 app.use(express.json());
 
-const MONGO_URI = process.env.MONGO_URI || "mongodb://admin:admin@host.docker.internal:27017/aihub";
+const MONGO_URI = process.env.MONGO_URI || "mongodb://admin:admin@172.31.19.149:27017/aihub";
 const PORT = process.env.PORT || 8080;
 
 let mongoStatus = "Disconnected";
