@@ -1,69 +1,48 @@
 const express = require("express");
-const mongoose = require("mongoose");
-require("dotenv").config();
+const cors = require("cors");
+const dotenv = require("dotenv");
+const connectDb = require("./config/db");
+const routes = require("./routers.routes");
+
+const envFile = process.env.NODE_ENV === "production" ? ".env.production" : ".env";
+dotenv.config({ path: envFile });
+
+console.log(`Environment: ${process.env.NODE_ENV}`);
+console.log(`Loaded config from: ${envFile}`);
 
 const app = express();
+
+const allowedOrigins = ["http://localhost:3000"]; 
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
+
+
 app.use(express.json());
 
-// const MONGO_URI = process.env.MONGO_URI || "mongodb://admin:admin@172.31.19.149:27017/aihub";
-MONGO_URI="mongodb+srv://chinmaymahantacm_db_user:AxpGl5ErfI9X6GQJ@aihub.k7injzq.mongodb.net/aihub?retryWrites=true&w=majority"
 
-const PORT = process.env.PORT || 8080;
+app.use(routes);
+const PORT = process.env.PORT || 8000;
 
-let mongoStatus = "Disconnected";
-
-mongoose
-  .connect(MONGO_URI)
+connectDb()
   .then(() => {
-    mongoStatus = "Connected ✅";
-    console.log("✅ MongoDB connected");
+    app.listen(PORT, () => {
+      console.log(
+        `Server is running in ${process.env.NODE_ENV} mode on http://localhost:${PORT}`
+      );
+    });
   })
   .catch((err) => {
-    mongoStatus = "Connection Failed ❌";
-    console.error("❌ MongoDB connection error:", err);
+    console.error("Failed to connect to the database:", err.message);
+    process.exit(1);
   });
-
-const itemSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  description: String,
-  createdAt: { type: Date, default: Date.now },
-});
-
-const Item = mongoose.model("Item", itemSchema);
-
-app.get("/", (req, res) => {
-  console.log("inside root route");
-  res.json({ status: 200, message: `Data: ${mongoStatus}` });
-});
-
-app.get("/items", async (req, res) => {
-  console.log("inside items route");
-  try {
-    console.log("before fetch");
-    const items = await Item.find().sort({ createdAt: -1 });
-    console.log("after fetch");
-    res.json({ status: 200, data: items });
-  } catch (err) {
-    console.error("Error fetching items:", err);
-    res.status(500).json({ status: 500, message: "Internal Server Error" });
-  }
-});
-
-// Optional: POST route to add items
-app.post("/items", async (req, res) => {
-  try {
-    const item = new Item({
-      name: req.body.name,
-      description: req.body.description,
-    });
-    await item.save();
-    res.json({ status: 200, data: item });
-  } catch (err) {
-    console.error("Error creating item:", err);
-    res.status(500).json({ status: 500, message: "Internal Server Error" });
-  }
-});
-
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
