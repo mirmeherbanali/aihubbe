@@ -14,6 +14,11 @@ const app = express();
 
 const allowedOrigins = ["http://localhost:3000"]; 
 
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
+});
+
 app.use(
   cors({
     origin: (origin, callback) => {
