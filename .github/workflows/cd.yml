@@ -7,24 +7,34 @@ on:
       - completed
 
 jobs:
-  build:
+  deploy:
     runs-on: self-hosted
-
     steps:
-    - name: Pull Docker Image
-      run: sudo docker pull chinmayma/aihubbe:latest
+      - name: Decide Environment
+        run: |
+          if [[ "${{ github.event.workflow_run.head_branch }}" == "trunk" ]]; then
+            echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+            echo "CONTAINER_NAME=aihubbe-prod" >> $GITHUB_ENV
+            echo "PORT=8080" >> $GITHUB_ENV
+          else
+            echo "IMAGE_TAG=dev" >> $GITHUB_ENV
+            echo "CONTAINER_NAME=aihubbe-dev" >> $GITHUB_ENV
+            echo "PORT=8081" >> $GITHUB_ENV
+          fi
 
-    - name: Stop and Delete Old Container
-      run: |
-        sudo docker stop aihubbe-container || true
-        sudo docker rm -f aihubbe-container || true
+      - name: Pull Docker Image
+        run: sudo docker pull ${{ secrets.DOCKER_USERNAME }}/aihubbe:${{ env.IMAGE_TAG }}
 
-    - name: Cleanup Old Docker Resources
-      run: |
-        # Remove unused images, containers, volumes, and networks
-        sudo docker system prune -af
-        sudo docker volume prune -f
-        sudo docker network prune -f
+      - name: Stop and Remove Old Container
+        run: |
+          sudo docker stop ${{ env.CONTAINER_NAME }} || true
+          sudo docker rm -f ${{ env.CONTAINER_NAME }} || true
 
-    - name: Run Docker Container
-      run: sudo docker run -d -p 8080:8080 --name aihubbe-container chinmayma/aihubbe
+      - name: Cleanup Docker
+        run: sudo docker system prune -af
+
+      - name: Run New Container
+        run: |
+          sudo docker run -d -p ${{ env.PORT }}:8000 \
+            --name ${{ env.CONTAINER_NAME }} \
+            ${{ secrets.DOCKER_USERNAME }}/aihubbe:${{ env.IMAGE_TAG }}
