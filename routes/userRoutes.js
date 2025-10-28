@@ -4,7 +4,7 @@ const {getAllUsers, getUserById,updateUser,deleteUser } = require("../controller
 const checkAuth = require("../middleware/authMiddleware");
 
 router.post("/getAllUsers", getAllUsers);
-router.post("/getUserById",checkAuth, getUserById);
+router.post("/getUserById", getUserById);
 router.put("/updateUser", updateUser);
 router.put("/deleteUser", deleteUser);
 
