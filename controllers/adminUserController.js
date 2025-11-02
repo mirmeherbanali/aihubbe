@@ -1,19 +1,25 @@
 const bcrypt = require("bcryptjs");
-const Admin = require("../models/AdminUser"); 
-const User= require("../models/User")
+const Admin = require("../models/AdminUser");
+const User = require("../models/User");
 const { response } = require("../common/response/response");
 
 const addAdminUser = async (req, res) => {
   try {
-    const { firstName, lastName, email, password, adminId } = req.body;
+    const { userType, firstName, lastName, email, password, adminId } =
+      req.body;
 
-    if (!firstName || !lastName || !email || !password) {
-      return response(res, false, "All required fields must be provided");
+    if (!userType) {
+      return response(res, false, "userType is required");
+    }
+    if (!email) {
+      return response(res, false, "Email must be provided");
+    }
+    if (!password) {
+      return response(res, false, "password must be provided");
     }
     if (!adminId) {
       return response(res, false, "adminId is required");
     }
-    
 
     const existingAdmin = await Admin.findOne({ email });
     if (existingAdmin) {
@@ -23,7 +29,11 @@ const addAdminUser = async (req, res) => {
     if (adminId) {
       const user = await User.findById(adminId);
       if (!user || user.userType !== "Admin") {
-        return response(res, false, "adminId must belong to a User with userType 'Admin'");
+        return response(
+          res,
+          false,
+          "adminId must belong to a User with userType 'Admin'"
+        );
       }
     }
 
@@ -35,7 +45,8 @@ const addAdminUser = async (req, res) => {
       email,
       password: hashedPassword,
       adminId,
-      status:"Active"
+      status: "Active",
+      userType: userType,
     });
 
     return response(res, true, "Admin created successfully", admin);
@@ -74,14 +85,14 @@ const updateAdminUser = async (req, res) => {
   }
 };
 
-
-
 const deleteAdminUser = async (req, res) => {
   try {
     const { adminId, targetAdminId } = req.body;
 
-    if (!adminId) return response(res, false, "adminId (requester) is required");
-    if (!targetAdminId) return response(res, false, "targetAdminId (user to delete) is required");
+    if (!adminId)
+      return response(res, false, "adminId (requester) is required");
+    if (!targetAdminId)
+      return response(res, false, "targetAdminId (user to delete) is required");
 
     const requester = await Admin.findById(adminId);
     if (!requester) return response(res, false, "Requester Admin not found");
@@ -92,7 +103,6 @@ const deleteAdminUser = async (req, res) => {
     const target = await Admin.findById(targetAdminId);
     if (!target) return response(res, false, "Admin User to delete not found");
 
-  
     if (target.userType === "Admin") {
       return response(res, false, "You cannot delete another Admin");
     }
@@ -104,7 +114,6 @@ const deleteAdminUser = async (req, res) => {
     return response(res, false, error.message);
   }
 };
-
 
 module.exports = {
   addAdminUser,

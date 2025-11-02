@@ -4,7 +4,7 @@ const toolSchema = new mongoose.Schema(
   {
     toolName: { type: String, required: true, trim: true },
     logo: { type: String, trim: true }, 
-    category: {type: mongoose.Schema.Types.ObjectId,ref: "Category",required: true,},
+    category: [{type: mongoose.Schema.Types.ObjectId,ref: "Category",required: true,}],
     description: { type: String, trim: true },
     pricingType: { type: String, enum: ["Free", "Paid", "Freemium"], default: "Free" },
     websiteUrl: { type: String, trim: true },
@@ -12,7 +12,7 @@ const toolSchema = new mongoose.Schema(
     tags: [{ type: String, trim: true }],
     features: [{ type: String }], 
     screenshots: [{ type: String, trim: true }], 
-    developerId: {
+    userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
