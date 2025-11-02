@@ -51,13 +51,17 @@ const register = async (req, res) => {
 
     await newUser.save();
 
-    return response(res, true, "User registered successfully", newUser.toJSON());
+    return response(
+      res,
+      true,
+      "User registered successfully",
+      newUser.toJSON()
+    );
   } catch (error) {
     console.error(error);
     return response(res, false, error.message);
   }
 };
-
 
 const login = async (req, res) => {
   try {
@@ -100,13 +104,11 @@ const login = async (req, res) => {
       user: user.toJSON(),
       isAdmin: isAdminLogin,
     });
-
   } catch (error) {
     console.error("Login Error:", error);
     return response(res, false, error.message);
   }
 };
-
 
 const logout = async (req, res) => {
   try {

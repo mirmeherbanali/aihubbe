@@ -2,7 +2,7 @@ const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 const { response } = require("../common/response/response");
 const Admin = require("../models/AdminUser")
-
+const Tool = require("../models/Tolls");
 
 const getAllUsers = async (req, res) => {
   try {
@@ -104,19 +104,34 @@ const deleteUser = async (req, res) => {
     if (!adminId) return response(res, false, "Admin ID is required");
 
 
-    const admin = await Admin.findOne({ _id: adminId, status: "Active", userType: "Admin" });
-    if (!admin) return response(res, false, "Admin not found, inactive, or not authorized");
-
+    const admin = await User.findOne({
+      _id: adminId,
+      status: "Active",
+      userType: "Admin",
+    });
+    if (!admin)
+      return response(res, false, "Admin not found, inactive, or not authorized");
 
     const user = await User.findById(userId);
     if (!user) return response(res, false, "User not found");
 
-
-    user.status = "Deleted"; 
+   
+    user.status = "Deleted";
+    user.updated_by = adminId;
     await user.save();
 
-    return response(res, true, "User deleted successfully", user);
+ 
+    const updatedTools = await Tool.updateMany(
+      { userId: userId },
+      { $set: { status: "Rejected", updated_by: adminId } }
+    );
+
+    return response(res, true, "User and their tools soft-deleted successfully", {
+      user: user.toJSON(),
+      affectedTools: updatedTools.modifiedCount,
+    });
   } catch (error) {
+    console.error(error);
     return response(res, false, error.message);
   }
 };

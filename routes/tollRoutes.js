@@ -1,6 +1,6 @@
 const express = require("express");
 const multer = require("multer");
-const { createTool,getAllTools  } = require("../controllers/tollController");
+const { createTool,updateTool,getAllTools,getToolDetailsById,deleteTool  } = require("../controllers/tollController");
 
 const router = express.Router();
 const storage = multer.memoryStorage();
@@ -13,5 +13,8 @@ const upload = multer({
 
 router.post("/create",upload.fields([{ name: "logo", maxCount: 1 },{ name: "screenshots", maxCount: 5 },]), createTool);
 router.get("/getAllTools", getAllTools);
+router.post("/getToolDetailsById", getToolDetailsById);
+router.put("/deleteTool", deleteTool);
+router.put("/updateTool",upload.fields([{ name: "logo", maxCount: 1 },{ name: "screenshots", maxCount: 5 },]), updateTool);
 
 module.exports = router;
