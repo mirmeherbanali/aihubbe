@@ -73,7 +73,7 @@ const getCategoryById = async (req, res) => {
       _id: categoryId,
       status: { $ne: "Deleted" },
     })
-      .populate("adminId", "firstName lastName email")
+      .populate("adminId") 
       .lean();
 
     if (!category) {
@@ -81,8 +81,10 @@ const getCategoryById = async (req, res) => {
     }
 
     const tools = await Tool.find({ category: categoryId })
-      .populate("userId", "firstName lastName email")
-      .select("toolName description pricingType websiteUrl status")
+      .populate("userId")       
+      .populate("category")      
+      .populate("created_by")    
+      .populate("updated_by")  
       .lean();
 
     const data = {
@@ -90,8 +92,9 @@ const getCategoryById = async (req, res) => {
       tools,
     };
 
-    return response(res, true, "Category details fetched successfully", data);
+    return response(res, true, "Category and tools fetched successfully", data);
   } catch (error) {
+    console.error("Error fetching category details:", error);
     return response(res, false, error.message);
   }
 };
