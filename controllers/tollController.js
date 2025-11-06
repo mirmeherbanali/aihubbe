@@ -3,7 +3,9 @@ const Tool = require("../models/Tolls");
 const Category = require("../models/Category");
 const User = require("../models/User");
 const Admin = require("../models/AdminUser");
+const Review = require("../models/Review");
 const { response } = require("../common/response/response");
+
 
 const s3 = new AWS.S3({
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
@@ -52,6 +54,8 @@ const createTool = async (req, res) => {
       tags,
       features,
       userId,
+      referringDomains,
+      uniqueBacklinks,
     } = req.body;
 
     if (!toolName) return response(res, false, "Tool name is required");
@@ -131,6 +135,8 @@ const createTool = async (req, res) => {
       features: parsedFeatures,
       screenshots: screenshotUrls,
       userId,
+      referringDomains: referringDomains || 0,
+      uniqueBacklinks: uniqueBacklinks || 0,
       created_by: userId,
     });
 
@@ -155,6 +161,8 @@ const updateTool = async (req, res) => {
       tags,
       features,
       userId,
+      referringDomains,
+      uniqueBacklinks,
     } = req.body;
 
     if (!id) return response(res, false, "Tool ID is required");
@@ -230,6 +238,10 @@ const updateTool = async (req, res) => {
     if (features)
       tool.features =
         typeof features === "string" ? JSON.parse(features) : features;
+    if (referringDomains !== undefined)
+      tool.referringDomains = Number(referringDomains) || 0;
+    if (uniqueBacklinks !== undefined)
+      tool.uniqueBacklinks = Number(uniqueBacklinks) || 0;
 
     await tool.save();
     return response(res, true, "Tool updated successfully", tool);
@@ -238,6 +250,26 @@ const updateTool = async (req, res) => {
     return response(res, false, "Error updating tool", error.message);
   }
 };
+
+const clamp = (value, min, max) => Math.max(min, Math.min(value, max));
+const normalize = (value, min, max) => {
+  return ((clamp(value, min, max) - min) / (max - min)) * 10;
+};
+const calculateRankScore = ({ aggregateRating, numReviews, referringDomains, uniqueBacklinks }) => {
+  const N_rating = normalize(aggregateRating, 0, 5);
+  const N_reviews = normalize(numReviews, 0, 10000);
+  const N_domains = normalize(referringDomains, 0, 100);
+  const N_links = normalize(uniqueBacklinks, 0, 100);
+
+  const rankScore =
+    N_rating * 0.35 +
+    N_reviews * 0.20 +
+    N_domains * 0.25 +
+    N_links * 0.20;
+
+  return parseFloat(rankScore.toFixed(2));
+};
+
 const getAllTools = async (req, res) => {
   try {
     let {
@@ -246,19 +278,13 @@ const getAllTools = async (req, res) => {
       search = "",
       category,
       userId,
-      sort = -1,
-      sortingFor = "createdAt",
     } = req.query;
 
     page = parseInt(page);
     limit = parseInt(limit);
 
     let filter = {};
-
-    if (search) {
-      filter.toolName = { $regex: search, $options: "i" };
-    }
-
+    if (search) filter.toolName = { $regex: search, $options: "i" };
     if (category) filter.category = category;
     if (userId) filter.userId = userId;
 
@@ -267,16 +293,61 @@ const getAllTools = async (req, res) => {
     const tools = await Tool.find(filter)
       .populate("category", "name")
       .populate("userId", "name email")
-      .sort({ [sortingFor]: sort })
-      .skip((page - 1) * limit)
-      .limit(limit);
+      .lean(); 
 
-    if (!tools.length) {
-      return response(res, false, "No tools found");
-    }
+    if (!tools.length) return response(res, false, "No tools found");
+
+    const toolIds = tools.map((t) => t._id);
+    const reviewStats = await Review.aggregate([
+      { $match: { toolId: { $in: toolIds } } },
+      {
+        $group: {
+          _id: "$toolId",
+          avgRating: { $avg: "$rating" },
+          countReviews: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const reviewMap = {};
+    reviewStats.forEach((r) => {
+      reviewMap[r._id.toString()] = {
+        aggregateRating: r.avgRating || 0,
+        numReviews: r.countReviews || 0,
+      };
+    });
+
+    const toolsWithScore = tools.map((tool) => {
+      const { referringDomains = 0, uniqueBacklinks = 0 } = tool;
+      const { aggregateRating = 0, numReviews = 0 } =
+        reviewMap[tool._id.toString()] || {};
+
+      const rankScore = calculateRankScore({
+        aggregateRating,
+        numReviews,
+        referringDomains,
+        uniqueBacklinks,
+      });
+
+      return {
+        ...tool,
+        aggregateRating: parseFloat(aggregateRating.toFixed(2)),
+        numReviews,
+        rankScore,
+      };
+    });
+
+    toolsWithScore.sort((a, b) => {
+      if (b.rankScore !== a.rankScore) return b.rankScore - a.rankScore;
+      if (b.aggregateRating !== a.aggregateRating)
+        return b.aggregateRating - a.aggregateRating;
+      return b.referringDomains - a.referringDomains;
+    });
+
+    const paginatedTools = toolsWithScore.slice((page - 1) * limit, page * limit);
 
     return response(res, true, "Tools fetched successfully", {
-      list: tools,
+      list: paginatedTools,
       currentPage: page,
       totalPages: Math.ceil(totalCount / limit),
       totalCount,
@@ -314,7 +385,41 @@ const getToolDetailsById = async (req, res) => {
 
     if (!tool) return response(res, false, "Tool not found");
 
-    return response(res, true, "Tool details fetched successfully", tool);
+    // ✅ Fetch all reviews for this tool
+    const reviews = await Review.find({ toolId: id })
+      .select("_id userId rating reviewText createdAt updatedAt")
+      .lean();
+
+    // ✅ Attach reviewer details from User/Admin collections
+    const enrichedReviews = await Promise.all(
+      reviews.map(async (review) => {
+        let reviewer =
+          (await User.findById(review.userId).select(
+            "_id firstName lastName email"
+          )) ||
+          (await Admin.findById(review.userId).select(
+            "_id firstName lastName email"
+          ));
+
+        return {
+          ...review,
+          reviewer: reviewer || null,
+        };
+      })
+    );
+
+    // ✅ Merge reviews with tool details
+    const toolWithReviews = {
+      ...tool,
+      reviews: enrichedReviews,
+    };
+
+    return response(
+      res,
+      true,
+      "Tool details (with reviews) fetched successfully",
+      toolWithReviews
+    );
   } catch (error) {
     console.error("Error fetching tool details:", error);
     return response(res, false, "Error fetching tool details", error.message);
