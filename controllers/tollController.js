@@ -239,51 +239,81 @@ const updateTool = async (req, res) => {
   }
 };
 const getAllTools = async (req, res) => {
+  const {
+    userId,
+    search,
+    category,
+    status,
+    sort = 1,
+    sortingFor = "toolName",
+    currentPage,
+    limit,
+  } = req.body;
+
   try {
-    let {
-      page = 1,
-      limit = 10,
-      search = "",
-      category,
-      userId,
-      sort = -1,
-      sortingFor = "createdAt",
-    } = req.query;
-
-    page = parseInt(page);
-    limit = parseInt(limit);
-
     let filter = {};
+
+    if (userId) {
+      filter.userId = userId;
+    }
+
+    if (category) {
+      filter.category = category;
+    }
+
+    if (status) {
+      filter.status = Array.isArray(status) ? { $in: status } : status;
+    }
 
     if (search) {
       filter.toolName = { $regex: search, $options: "i" };
     }
 
-    if (category) filter.category = category;
-    if (userId) filter.userId = userId;
-
+    
     const totalCount = await Tool.countDocuments(filter);
+    let query = Tool.find(filter)
+      .populate("userId", "firstName lastName email")
+      .populate("category", "categoryName")
+      .collation({ locale: "en", strength: 2 })
+      .sort({ [sortingFor]: sort });
 
-    const tools = await Tool.find(filter)
-      .populate("category", "name")
-      .populate("userId", "name email")
-      .sort({ [sortingFor]: sort })
-      .skip((page - 1) * limit)
-      .limit(limit);
+    let totalPages = 1;
+    let hasMore = false;
+    let pageNumber = currentPage ? parseInt(currentPage) : undefined;
+    let pageSize = limit ? parseInt(limit) : undefined;
 
-    if (!tools.length) {
-      return response(res, false, "No tools found");
+    if (pageSize) {
+      let skip = ((pageNumber || 1) - 1) * pageSize;
+      totalPages = Math.ceil(totalCount / pageSize);
+      hasMore = skip + pageSize < totalCount;
+      query = query.skip(skip).limit(pageSize);
     }
 
-    return response(res, true, "Tools fetched successfully", {
-      list: tools,
-      currentPage: page,
-      totalPages: Math.ceil(totalCount / limit),
+    const tools = await query.lean();
+
+    if (tools.length === 0) {
+      return response(
+        res,
+        false,
+        userId
+          ? "No Tools found for this user"
+          : "No Tools matching the search criteria"
+      );
+    }
+
+
+    return response(
+      res,
+      true,
+      "Tools fetched successfully",
+      tools,
       totalCount,
-    });
+      pageNumber,
+      totalPages,
+      hasMore
+    );
   } catch (error) {
-    console.error("Error fetching tools:", error);
-    return response(res, false, "Error fetching tools", error.message);
+    return response(res, false, error.message);
   }
 };
 
