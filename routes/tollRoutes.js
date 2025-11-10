@@ -12,7 +12,7 @@ const upload = multer({
 
 
 router.post("/create",upload.fields([{ name: "logo", maxCount: 1 },{ name: "screenshots", maxCount: 5 },]), createTool);
-router.get("/getAllTools", getAllTools);
+router.post("/getAllTools", getAllTools);
 router.post("/getToolDetailsById", getToolDetailsById);
 router.put("/deleteTool", deleteTool);
 router.put("/updateTool",upload.fields([{ name: "logo", maxCount: 1 },{ name: "screenshots", maxCount: 5 },]), updateTool);
