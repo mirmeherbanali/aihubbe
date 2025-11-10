@@ -3,6 +3,8 @@ const Category = require("../models/Category");
 const Admin = require("../models/AdminUser");
 const User = require("../models/User");
 const Tool = require("../models/Tolls");
+const Review = require("../models/Review");
+
 
 const createCategory = async (req, res) => {
   try {
@@ -73,7 +75,7 @@ const getCategoryById = async (req, res) => {
       _id: categoryId,
       status: { $ne: "Deleted" },
     })
-      .populate("adminId") 
+      .populate("adminId")
       .lean();
 
     if (!category) {
@@ -81,23 +83,86 @@ const getCategoryById = async (req, res) => {
     }
 
     const tools = await Tool.find({ category: categoryId })
-      .populate("userId")       
-      .populate("category")      
-      .populate("created_by")    
-      .populate("updated_by")  
+      .populate("userId")
+      .populate("category")
+      .populate("created_by")
+      .populate("updated_by")
       .lean();
+
+    const toolIds = tools.map((t) => t._id);
+
+    if (toolIds.length === 0) {
+      return response(res, true, "Category fetched", {
+        category,
+        tools: [],
+        reviewSummary: {},
+      });
+    }
+    const reviews = await Review.find({ toolId: { $in: toolIds } })
+      .populate("userId")
+      .lean();
+
+    let globalTotalReviews = 0;
+    let globalRatingSum = 0;
+    let globalBreakdown = { "1": 0, "2": 0, "3": 0, "4": 0, "5": 0 };
+
+    const toolsWithReviewData = tools.map((tool) => {
+      const toolReviews = reviews.filter((r) => String(r.toolId) === String(tool._id));
+
+      const toolReviewCount = toolReviews.length;
+
+      let ratingSum = 0;
+      let breakdown = { "1": 0, "2": 0, "3": 0, "4": 0, "5": 0 };
+
+      toolReviews.forEach((r) => {
+        ratingSum += r.rating;
+        breakdown[r.rating]++;
+
+    
+        globalTotalReviews++;
+        globalRatingSum += r.rating;
+        globalBreakdown[r.rating]++;
+      });
+
+      const avgRating =
+        toolReviewCount > 0 ? (ratingSum / toolReviewCount).toFixed(2) : 0;
+
+      return {
+        ...tool,
+        reviewSummary: {
+          totalReviews: toolReviewCount,
+          avgRating,
+          ratingBreakdown: breakdown,
+          reviews: toolReviews, 
+        },
+      };
+    });
+
+    const globalAvgRating =
+      globalTotalReviews > 0 ? (globalRatingSum / globalTotalReviews).toFixed(2) : 0;
 
     const data = {
       category,
-      tools,
+      tools: toolsWithReviewData,
+      finalSummary: {
+        totalReviews: globalTotalReviews,
+        avgRating: globalAvgRating,
+        ratingBreakdown: globalBreakdown,
+      },
     };
 
-    return response(res, true, "Category and tools fetched successfully", data);
+    return response(
+      res,
+      true,
+      "Category, tools, and review stats fetched successfully",
+      data
+    );
   } catch (error) {
     console.error("Error fetching category details:", error);
     return response(res, false, error.message);
   }
 };
+
 
 const updateCategory = async (req, res) => {
   try {
