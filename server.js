@@ -12,7 +12,12 @@ console.log(`Loaded config from: ${envFile}`);
 
 const app = express();
 
-const allowedOrigins = ["http://localhost:3000"]; 
+const allowedOrigins = [
+                        "http://localhost:3000",
+                        "https://recuip.com",
+                        "https://app.recuip.com",
+                        "http://ec2-98-89-29-192.compute-1.amazonaws.com:8080",
+                      ];
 
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.url}`);
