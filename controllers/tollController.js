@@ -155,16 +155,17 @@ const updateTool = async (req, res) => {
       tags,
       features,
       userId,
+      status,
     } = req.body;
 
     if (!id) return response(res, false, "Tool ID is required");
 
     const tool = await Tool.findById(id);
     if (!tool) return response(res, false, "Tool not found");
-
+    let isCreatorValid = true;
     if (userId) {
-      const canUpdate = await validateCreator(userId);
-      if (!canUpdate)
+      isCreatorValid = await validateCreator(userId);
+      if (!isCreatorValid)
         return response(
           res,
           false,
@@ -173,6 +174,24 @@ const updateTool = async (req, res) => {
 
       tool.userId = userId;
       tool.updated_by = userId;
+    }
+     if (status) {
+      const user = await User.findById(userId);
+      const adminUser = await Admin.findById(userId);
+
+      const isAdmin =
+        (user && user.userType === "Admin") ||
+        (adminUser && adminUser.userType === "AdminUser");
+
+      if (!isAdmin) {
+        return response(
+          res,
+          false,
+          "Only Admin or AdminUser can update tool status"
+        );
+      }
+
+      tool.status = status; 
     }
 
     if (category) {

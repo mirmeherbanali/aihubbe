@@ -22,6 +22,19 @@ const reviewSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    status: {
+      type: String,
+      enum: ["Pending", "Approved", "Rejected"],
+      default: "Pending",
+    },
+
+    addedTime: {
+      type: Date,
+      default: Date.now,
+    },
+    updatedTime: {
+      type: Date,
+    },
   },
   { timestamps: true }
 );

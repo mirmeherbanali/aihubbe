@@ -27,7 +27,7 @@ const addReview = async (req, res) => {
         "Review already exists. Please update instead."
       );
 
-    const newReview = new Review({ toolId, userId, rating, reviewText });
+    const newReview = new Review({ toolId, userId, rating, reviewText,  status: "Pending",addedTime: Date.now() });
     await newReview.save();
 
     return response(res, true, "Review added successfully", newReview);
@@ -39,7 +39,7 @@ const addReview = async (req, res) => {
 
 const updateReview = async (req, res) => {
   try {
-    const { toolId, userId, rating, reviewText } = req.body;
+    const { toolId, userId, rating, reviewText, status } = req.body;
 
     if (!toolId) return response(res, false, "toolId is required");
     if (!userId) return response(res, false, "userId is required");
@@ -51,6 +51,10 @@ const updateReview = async (req, res) => {
 
     existingReview.rating = rating;
     existingReview.reviewText = reviewText;
+    existingReview.updatedTime = Date.now();
+
+    if (status) existingReview.status = status; 
+
     await existingReview.save();
 
     return response(res, true, "Review updated successfully", existingReview);
@@ -60,9 +64,10 @@ const updateReview = async (req, res) => {
   }
 };
 
+
 const getToolReviews = async (req, res) => {
   try {
-    const { toolId } = req.params;
+    const { toolId } = req.body;
 
     const reviews = await Review.find({ toolId })
       .populate("userId", "name email")
@@ -77,7 +82,7 @@ const getToolReviews = async (req, res) => {
 
 const getUserReviews = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const { userId } = req.body;
 
     const reviews = await Review.find({ userId })
       .populate("toolId", "toolName logo")
