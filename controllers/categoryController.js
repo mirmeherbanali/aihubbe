@@ -82,7 +82,10 @@ const getCategoryById = async (req, res) => {
       return response(res, false, "Category not found");
     }
 
-    const tools = await Tool.find({ category: categoryId })
+   const tools = await Tool.find({
+      category: categoryId,
+      status: "Approved",
+    })
       .populate("userId")
       .populate("category")
       .populate("created_by")

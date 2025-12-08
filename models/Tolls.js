@@ -10,7 +10,7 @@ const toolSchema = new mongoose.Schema(
     description: { type: String, trim: true },
     pricingType: {
       type: String,
-      enum: ["Free", "Paid", "Freemium"],
+      enum: ["Free", "Paid", "Premium"],
       default: "Free",
     },
     websiteUrl: { type: String, trim: true },

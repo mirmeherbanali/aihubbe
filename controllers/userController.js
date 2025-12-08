@@ -126,7 +126,7 @@ const deleteUser = async (req, res) => {
       { $set: { status: "Rejected", updated_by: adminId } }
     );
 
-    return response(res, true, "User and their tools soft-deleted successfully", {
+    return response(res, true, "User deleted successfully", {
       user: user.toJSON(),
       affectedTools: updatedTools.modifiedCount,
     });
