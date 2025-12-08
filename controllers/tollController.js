@@ -119,23 +119,29 @@ const createTool = async (req, res) => {
         : features
       : [];
 
-    const newTool = new Tool({
-      toolName,
-      logo: logoUrl,
-      category,
-      description,
-      pricingType,
-      websiteUrl,
-      demoVideoUrl,
-      tags: parsedTags,
-      features: parsedFeatures,
-      screenshots: screenshotUrls,
-      userId,
-      created_by: userId,
-    });
+    let savedTools = [];
 
-    await newTool.save();
-    return response(res, true, "Tool created successfully", newTool);
+    for (const catId of category) {
+      const newTool = new Tool({
+        toolName,
+        logo: logoUrl,
+        category: [catId],
+        description,
+        pricingType,
+        websiteUrl,
+        demoVideoUrl,
+        tags: parsedTags,
+        features: parsedFeatures,
+        screenshots: screenshotUrls,
+        userId,
+        created_by: userId,
+      });
+
+      const saved = await newTool.save();
+      savedTools.push(saved);
+    }
+
+    return response(res, true, "Tool created successfully", savedTools);
   } catch (error) {
     console.error("Error creating tool:", error);
     return response(res, false, "Error creating tool", error.message);
@@ -175,7 +181,7 @@ const updateTool = async (req, res) => {
       tool.userId = userId;
       tool.updated_by = userId;
     }
-     if (status) {
+    if (status) {
       const user = await User.findById(userId);
       const adminUser = await Admin.findById(userId);
 
@@ -191,7 +197,7 @@ const updateTool = async (req, res) => {
         );
       }
 
-      tool.status = status; 
+      tool.status = status;
     }
 
     if (category) {
@@ -288,7 +294,6 @@ const getAllTools = async (req, res) => {
       filter.toolName = { $regex: search, $options: "i" };
     }
 
-    
     const totalCount = await Tool.countDocuments(filter);
     let query = Tool.find(filter)
       .populate("userId", "firstName lastName email")
@@ -320,7 +325,6 @@ const getAllTools = async (req, res) => {
       );
     }
 
-
     return response(
       res,
       true,
@@ -342,7 +346,7 @@ const getToolDetailsById = async (req, res) => {
 
     if (!id) return response(res, false, "Tool ID is required");
 
-    const tool = await Tool.findById(id)
+    const tool = await Tool.findOne({ _id: id, status: "Approved" })
       .populate({
         path: "category",
         select: "_id categoryName slug categoryDescription status",
