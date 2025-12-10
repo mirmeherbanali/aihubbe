@@ -102,21 +102,36 @@ const addReview = async (req, res) => {
 
 const updateReview = async (req, res) => {
   try {
-    const { toolId, userId, rating, reviewText, status } = req.body;
+    const { reviewId, rating, reviewText, status, userId } = req.body;
 
-    if (!toolId) return response(res, false, "toolId is required");
+    if (!reviewId) return response(res, false, "reviewId is required");
     if (!userId) return response(res, false, "userId is required");
     if (!rating) return response(res, false, "rating is required");
 
-    const existingReview = await Review.findOne({ toolId, userId });
-    if (!existingReview)
-      return response(res, false, "Review not found. Please add first.");
+    const existingReview = await Review.findById(reviewId);
+    if (!existingReview) return response(res, false, "Review not found");
+
+    const user = await User.findById(userId);
+    const adminUser = await Admin.findById(userId);
+
+    const isAdmin =
+      (user && user.userType === "Admin") ||
+      (adminUser && adminUser.userType === "AdminUser");
 
     existingReview.rating = rating;
     existingReview.reviewText = reviewText;
     existingReview.updatedTime = Date.now();
 
-    if (status) existingReview.status = status;
+    if (status) {
+      if (!isAdmin) {
+        return response(
+          res,
+          false,
+          "Only Admin or AdminUser can update review status"
+        );
+      }
+      existingReview.status = status;
+    }
 
     await existingReview.save();
 
