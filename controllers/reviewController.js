@@ -21,7 +21,7 @@ const getAllReviews = async (req, res) => {
     const totalCount = await Review.countDocuments(filter);
 
     let query = Review.find(filter)
-      .populate("userId", "name email")
+      .populate("userId")
       .populate("toolId", "toolName logo")
       .collation({ locale: "en", strength: 2 })
       .sort({ [sortingFor]: sort });

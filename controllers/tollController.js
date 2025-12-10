@@ -135,6 +135,8 @@ const createTool = async (req, res) => {
         screenshots: screenshotUrls,
         userId,
         created_by: userId,
+        referringDomains: 0,
+        uniqueBacklinks: 0,
       });
 
       const saved = await newTool.save();
@@ -162,12 +164,15 @@ const updateTool = async (req, res) => {
       features,
       userId,
       status,
+      referringDomains,
+      uniqueBacklinks,
     } = req.body;
 
     if (!id) return response(res, false, "Tool ID is required");
 
     const tool = await Tool.findById(id);
     if (!tool) return response(res, false, "Tool not found");
+
     let isCreatorValid = true;
     if (userId) {
       isCreatorValid = await validateCreator(userId);
@@ -178,9 +183,9 @@ const updateTool = async (req, res) => {
           "Only Admin, Developer, or AdminUser can update tools"
         );
 
-      tool.userId = userId;
       tool.updated_by = userId;
     }
+
     if (status) {
       const user = await User.findById(userId);
       const adminUser = await Admin.findById(userId);
@@ -220,6 +225,7 @@ const updateTool = async (req, res) => {
       const categoryDocs = await Category.find({
         _id: { $in: parsedCategory },
       });
+
       if (categoryDocs.length !== parsedCategory.length) {
         const foundIds = categoryDocs.map((c) => c._id.toString());
         const invalidIds = parsedCategory.filter(
@@ -255,6 +261,14 @@ const updateTool = async (req, res) => {
     if (features)
       tool.features =
         typeof features === "string" ? JSON.parse(features) : features;
+
+    if (typeof referringDomains !== "undefined") {
+      tool.referringDomains = Number(referringDomains);
+    }
+
+    if (typeof uniqueBacklinks !== "undefined") {
+      tool.uniqueBacklinks = Number(uniqueBacklinks);
+    }
 
     await tool.save();
     return response(res, true, "Tool updated successfully", tool);
