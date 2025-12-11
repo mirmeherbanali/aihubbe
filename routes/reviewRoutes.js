@@ -11,7 +11,7 @@ const {
 router.post("/getAllReviews", getAllReviews);
 router.post("/addReview", addReview);
 router.put("/updateReview", updateReview);
-router.post("/tool/:toolId", getToolReviews);
-router.post("/user/:userId", getUserReviews);
+router.post("/tool", getToolReviews);
+router.post("/user", getUserReviews);
 
 module.exports = router;
