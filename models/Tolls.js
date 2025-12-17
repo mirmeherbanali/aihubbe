@@ -7,7 +7,9 @@ const toolSchema = new mongoose.Schema(
     category: [
       { type: mongoose.Schema.Types.ObjectId, ref: "Category", required: true },
     ],
+    shortDescription: { type: String, trim: true },
     description: { type: String, trim: true },
+    startingPrice: { type: Number, default: 0},
     pricingType: {
       type: String,
       enum: ["Free", "Paid", "Premium"],

@@ -45,7 +45,9 @@ const createTool = async (req, res) => {
     let {
       toolName,
       category,
+      shortDescription,
       description,
+      startingPrice,
       pricingType,
       websiteUrl,
       demoVideoUrl,
@@ -126,7 +128,9 @@ const createTool = async (req, res) => {
         toolName,
         logo: logoUrl,
         category: [catId],
+        shortDescription,
         description,
+        startingPrice: startingPrice || 0,
         pricingType,
         websiteUrl,
         demoVideoUrl,
@@ -156,7 +160,9 @@ const updateTool = async (req, res) => {
       id,
       toolName,
       category,
+      shortDescription,
       description,
+      startingPrice,
       pricingType,
       websiteUrl,
       demoVideoUrl,
@@ -253,6 +259,10 @@ const updateTool = async (req, res) => {
     }
 
     if (toolName) tool.toolName = toolName;
+    if (shortDescription) tool.shortDescription = shortDescription;
+    if (typeof startingPrice !== "undefined") {
+      tool.startingPrice = Number(startingPrice);
+    }
     if (description) tool.description = description;
     if (pricingType) tool.pricingType = pricingType;
     if (websiteUrl) tool.websiteUrl = websiteUrl;
