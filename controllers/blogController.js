@@ -22,7 +22,6 @@ const uploadToS3 = async (file, folder = "blogs") => {
   return upload.Location;
 };
 
-
 const validateBlogCreator = async (userId) => {
   const user = await User.findById(userId);
   if (user && ["Admin", "Developer"].includes(user.userType)) return true;
@@ -58,11 +57,16 @@ const createBlog = async (req, res) => {
     if (!userId) return response(res, false, "userId is required");
 
     const canCreate = await validateBlogCreator(userId);
-    if (!canCreate)
-      return response(res, false, "Permission denied");
+    if (!canCreate) return response(res, false, "Permission denied");
 
     if (typeof categories === "string") {
-      categories = JSON.parse(categories);
+      try {
+        categories = categories.startsWith("[")
+          ? JSON.parse(categories)
+          : [categories];
+      } catch (e) {
+        return response(res, false, "Invalid categories format");
+      }
     }
 
     const categoryDocs = await Category.find({ _id: { $in: categories } });
@@ -94,7 +98,8 @@ const createBlog = async (req, res) => {
       categories,
       author,
       status,
-      publishedDate: status === "Published" ? publishedDate || new Date() : null,
+      publishedDate:
+        status === "Published" ? publishedDate || new Date() : null,
       lastModifiedDate: new Date(),
       jsonLdSchema,
       featuredImage,
@@ -110,25 +115,45 @@ const createBlog = async (req, res) => {
   }
 };
 
-
 const updateBlog = async (req, res) => {
   try {
-    const {
+    let {
       id,
       userId,
       status,
+      categories,
       featuredImageAltText,
       featuredImageTitleText,
+      blogTitle,
+      slug,
+      content,
+      shortDescription,
+      metaDescription,
+      jsonLdSchema,
     } = req.body;
 
     if (!id) return response(res, false, "Blog ID is required");
+    if (!userId) return response(res, false, "userId is required");
 
     const blog = await Blog.findById(id);
     if (!blog) return response(res, false, "Blog not found");
 
     const canUpdate = await validateBlogCreator(userId);
-    if (!canUpdate)
-      return response(res, false, "Permission denied");
+    if (!canUpdate) return response(res, false, "Permission denied");
+
+    if (categories) {
+      if (typeof categories === "string") {
+        try {
+          categories = categories.startsWith("[")
+            ? JSON.parse(categories)
+            : [categories];
+        } catch (e) {
+          return response(res, false, "Invalid categories format");
+        }
+      }
+
+      blog.categories = categories;
+    }
 
     if (req.files?.featuredImage?.[0]) {
       const imageUrl = await uploadToS3(
@@ -143,22 +168,29 @@ const updateBlog = async (req, res) => {
       };
     }
 
-    Object.assign(blog, req.body);
-    blog.updated_by = userId;
-    blog.lastModifiedDate = new Date();
+    if (blogTitle) blog.blogTitle = blogTitle;
+    if (slug) blog.slug = slug;
+    if (content) blog.content = content;
+    if (shortDescription) blog.shortDescription = shortDescription;
+    if (metaDescription) blog.metaDescription = metaDescription;
+    if (jsonLdSchema) blog.jsonLdSchema = jsonLdSchema;
+    if (status) blog.status = status;
 
     if (status === "Published" && !blog.publishedDate) {
       blog.publishedDate = new Date();
     }
 
+    blog.updated_by = userId;
+    blog.lastModifiedDate = new Date();
+
     await blog.save();
 
     return response(res, true, "Blog updated successfully", blog);
   } catch (error) {
+    console.error(error);
     return response(res, false, "Error updating blog", error.message);
   }
 };
-
 
 const getAllBlogs = async (req, res) => {
   const { search, status, currentPage = 1, limit = 10 } = req.body;
@@ -181,18 +213,11 @@ const getAllBlogs = async (req, res) => {
       .limit(limit)
       .lean();
 
-    return response(
-      res,
-      true,
-      "Blogs fetched successfully",
-      blogs,
-      totalCount
-    );
+    return response(res, true, "Blogs fetched successfully", blogs, totalCount);
   } catch (error) {
     return response(res, false, error.message);
   }
 };
-
 
 const getBlogById = async (req, res) => {
   const { id } = req.body;
@@ -209,7 +234,6 @@ const getBlogById = async (req, res) => {
   return response(res, true, "Blog fetched successfully", blog);
 };
 
-
 const deleteBlog = async (req, res) => {
   const { id, adminId } = req.body;
 
@@ -219,14 +243,12 @@ const deleteBlog = async (req, res) => {
   const adminExists =
     (await Admin.findById(adminId)) || (await User.findById(adminId));
 
-  if (!adminExists)
-    return response(res, false, "Permission denied");
+  if (!adminExists) return response(res, false, "Permission denied");
 
   await Blog.findByIdAndDelete(id);
 
   return response(res, true, "Blog deleted successfully");
 };
-
 
 module.exports = {
   createBlog,

@@ -2,17 +2,11 @@ const AWS = require("aws-sdk");
 const Author = require("../models/Author");
 const { response } = require("../common/response/response");
 
-/* ==========================
-   AWS S3 CONFIG
-========================== */
 const s3 = new AWS.S3({
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
 });
 
-/* ==========================
-   Upload Helper
-========================== */
 const uploadToS3 = async (file, folder = "authors") => {
   const params = {
     Bucket: process.env.AWS_BUCKET_NAME,
@@ -25,29 +19,32 @@ const uploadToS3 = async (file, folder = "authors") => {
   return upload.Location;
 };
 
-/* ==========================
-   CREATE AUTHOR
-========================== */
 const createAuthor = async (req, res) => {
   try {
     const { authorName, authorBio, socialLinks } = req.body;
 
-    if (!authorName)
+    if (!authorName) {
       return response(res, false, "Author name is required");
+    }
 
-    // socialLinks can come as JSON string or array
-    const parsedSocialLinks =
-      typeof socialLinks === "string"
-        ? JSON.parse(socialLinks)
-        : socialLinks || [];
+    const existingAuthor = await Author.findOne({
+      authorName: { $regex: `^${authorName}$`, $options: "i" },
+    });
+
+    if (existingAuthor) {
+      return response(res, false, "Author already exists");
+    }
+
+    const parsedSocialLinks = Array.isArray(socialLinks)
+      ? socialLinks
+      : socialLinks
+      ? [socialLinks]
+      : [];
 
     let authorImage = null;
 
     if (req.files?.authorImage?.[0]) {
-      authorImage = await uploadToS3(
-        req.files.authorImage[0],
-        "authors"
-      );
+      authorImage = await uploadToS3(req.files.authorImage[0], "authors");
     }
 
     const author = new Author({
@@ -65,14 +62,9 @@ const createAuthor = async (req, res) => {
   }
 };
 
-/* ==========================
-   GET ALL AUTHORS
-========================== */
 const getAllAuthors = async (req, res) => {
   try {
-    const authors = await Author.find()
-      .sort({ createdAt: -1 })
-      .lean();
+    const authors = await Author.find().sort({ createdAt: -1 }).lean();
 
     return response(res, true, "Authors fetched successfully", authors);
   } catch (error) {
@@ -80,9 +72,6 @@ const getAllAuthors = async (req, res) => {
   }
 };
 
-/* ==========================
-   GET AUTHOR BY ID
-========================== */
 const getAuthorById = async (req, res) => {
   const { id } = req.body;
 
@@ -94,33 +83,49 @@ const getAuthorById = async (req, res) => {
   return response(res, true, "Author fetched successfully", author);
 };
 
-/* ==========================
-   UPDATE AUTHOR
-========================== */
 const updateAuthor = async (req, res) => {
   try {
     const { id, authorName, authorBio, socialLinks } = req.body;
 
-    if (!id) return response(res, false, "Author ID is required");
+    if (!id) {
+      return response(res, false, "Author ID is required");
+    }
 
     const author = await Author.findById(id);
-    if (!author) return response(res, false, "Author not found");
+    if (!author) {
+      return response(res, false, "Author not found");
+    }
+
+    if (authorName && authorName !== author.authorName) {
+      const existingAuthor = await Author.findOne({
+        _id: { $ne: id },
+        authorName: { $regex: `^${authorName}$`, $options: "i" },
+      });
+
+      if (existingAuthor) {
+        return response(res, false, "Author name already exists");
+      }
+
+      author.authorName = authorName;
+    }
+
+    if (authorBio) {
+      author.authorBio = authorBio;
+    }
+
+    if (socialLinks !== undefined) {
+      author.socialLinks = Array.isArray(socialLinks)
+        ? socialLinks
+        : socialLinks
+        ? [socialLinks]
+        : [];
+    }
 
     if (req.files?.authorImage?.[0]) {
       author.authorImage = await uploadToS3(
         req.files.authorImage[0],
         "authors"
       );
-    }
-
-    if (authorName) author.authorName = authorName;
-    if (authorBio) author.authorBio = authorBio;
-
-    if (socialLinks) {
-      author.socialLinks =
-        typeof socialLinks === "string"
-          ? JSON.parse(socialLinks)
-          : socialLinks;
     }
 
     await author.save();
@@ -131,9 +136,6 @@ const updateAuthor = async (req, res) => {
   }
 };
 
-/* ==========================
-   DELETE AUTHOR
-========================== */
 const deleteAuthor = async (req, res) => {
   try {
     const { id } = req.body;
