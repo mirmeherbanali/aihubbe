@@ -206,7 +206,7 @@ const getAllBlogs = async (req, res) => {
     const totalCount = await Blog.countDocuments(filter);
 
     const blogs = await Blog.find(filter)
-      .populate("author", "firstName lastName")
+      .populate("author", "authorName authorBio authorImage socialLinks")
       .populate("categories", "categoryName")
       .sort({ createdAt: -1 })
       .skip((currentPage - 1) * limit)
@@ -249,6 +249,46 @@ const deleteBlog = async (req, res) => {
 
   return response(res, true, "Blog deleted successfully");
 };
+const getBlogsByCategory = async (req, res) => {
+  try {
+    let {
+      categoryId,
+      search,
+      status = "Published",
+      currentPage = 1,
+      limit = 10,
+    } = req.body;
+
+    if (!categoryId) return response(res, false, "Category ID is required");
+    const category = await Category.findById(categoryId);
+    if (!category) return response(res, false, "Category not found");
+
+    let filter = {
+      categories: categoryId,
+    };
+
+    if (status) filter.status = status;
+
+    if (search) {
+      filter.blogTitle = { $regex: search, $options: "i" };
+    }
+
+    const totalCount = await Blog.countDocuments(filter);
+
+    const blogs = await Blog.find(filter)
+      .populate("author", "authorName authorBio authorImage socialLinks")
+      .populate("categories", "categoryName")
+      .sort({ createdAt: -1 })
+      .skip((currentPage - 1) * limit)
+      .limit(Number(limit))
+      .lean();
+
+    return response(res, true, "Blogs fetched successfully", blogs, totalCount);
+  } catch (error) {
+    console.error(error);
+    return response(res, false, "Error fetching blogs", error.message);
+  }
+};
 
 module.exports = {
   createBlog,
@@ -256,4 +296,5 @@ module.exports = {
   getAllBlogs,
   getBlogById,
   deleteBlog,
+  getBlogsByCategory,
 };
