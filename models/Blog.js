@@ -76,7 +76,11 @@ const blogSchema = new mongoose.Schema(
     jsonLdSchema: {
       type: String,
     },
-
+    metaRobots: {
+      type: String,
+      enum: ["index, follow", "noindex, nofollow"],
+      default: "index, follow",
+    },
     created_by: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -89,7 +93,7 @@ const blogSchema = new mongoose.Schema(
       default: null,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("Blog", blogSchema, "blogs");

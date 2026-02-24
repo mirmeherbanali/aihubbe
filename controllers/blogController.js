@@ -45,6 +45,7 @@ const createBlog = async (req, res) => {
       status,
       publishedDate,
       jsonLdSchema,
+      metaRobots,
       userId,
       featuredImageAltText,
       featuredImageTitleText,
@@ -102,6 +103,7 @@ const createBlog = async (req, res) => {
         status === "Published" ? publishedDate || new Date() : null,
       lastModifiedDate: new Date(),
       jsonLdSchema,
+       metaRobots: metaRobots || "index, follow", 
       featuredImage,
       created_by: userId,
     });
@@ -130,6 +132,7 @@ const updateBlog = async (req, res) => {
       shortDescription,
       metaDescription,
       jsonLdSchema,
+      metaRobots,
     } = req.body;
 
     if (!id) return response(res, false, "Blog ID is required");
@@ -174,6 +177,7 @@ const updateBlog = async (req, res) => {
     if (shortDescription) blog.shortDescription = shortDescription;
     if (metaDescription) blog.metaDescription = metaDescription;
     if (jsonLdSchema) blog.jsonLdSchema = jsonLdSchema;
+    if (metaRobots) blog.metaRobots = metaRobots;
     if (status) blog.status = status;
 
     if (status === "Published" && !blog.publishedDate) {
@@ -296,5 +300,6 @@ module.exports = {
   getAllBlogs,
   getBlogById,
   deleteBlog,
-  getBlogsByCategory,
+  getBlogsByCategory
+  
 };
