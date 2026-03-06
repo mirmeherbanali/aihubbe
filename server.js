@@ -4,6 +4,8 @@ const dotenv = require("dotenv");
 const connectDb = require("./config/db");
 const routes = require("./routers.routes");
 
+//testing
+
 const envFile = process.env.NODE_ENV === "production" ? ".env.production" : ".env";
 dotenv.config({ path: envFile });
 
