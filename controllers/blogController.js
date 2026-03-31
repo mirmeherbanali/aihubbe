@@ -496,7 +496,83 @@ const getBlogsByCategory = async (req, res) => {
     return response(res, false, "Error fetching blogs", error.message);
   }
 };
+const getBlogBySlug = async (req, res) => {
+  try {
+    const { slug, categoryName } = req.body;
 
+    if (!slug) return response(res, false, "Slug is required");
+
+    /* 🔥 FIND BLOG BY SLUG */
+    const blog = await Blog.findOne({
+      slug: slug,
+      status: "Published",
+    })
+      .populate("author", "authorName")
+      .populate("categories", "categoryName")
+      .lean();
+
+    if (!blog) return response(res, false, "Blog not found");
+
+    /* 🔥 CATEGORY FILTER */
+    let categoryFilterIds = [];
+
+    if (categoryName) {
+      const matchedCategory = blog.categories.find(
+        (cat) =>
+          cat.categoryName.toLowerCase() === categoryName.toLowerCase()
+      );
+
+      if (matchedCategory) {
+        categoryFilterIds.push(matchedCategory._id);
+      }
+    } else {
+      categoryFilterIds = blog.categories.map((cat) => cat._id);
+    }
+
+    /* 🔥 RELATED */
+    let relatedArticles = await Blog.find({
+      _id: { $ne: blog._id },
+      categories: { $in: categoryFilterIds },
+      status: "Published",
+    })
+      .populate("author", "authorName")
+      .populate("categories", "categoryName")
+      .select("blogTitle slug featuredImage createdAt author categories")
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .lean();
+
+    /* 🔥 FILTER CATEGORY */
+    relatedArticles = relatedArticles.map((article) => ({
+      ...article,
+      categories: article.categories.filter((cat) =>
+        categoryFilterIds.some(
+          (id) => id.toString() === cat._id.toString()
+        )
+      ),
+    }));
+
+    /* 🔥 LATEST */
+    const latestArticle = await Blog.find({
+      _id: { $ne: blog._id },
+      status: "Published",
+    })
+      .populate("author", "authorName")
+      .populate("categories", "categoryName")
+      .select("blogTitle slug featuredImage createdAt author categories")
+      .sort({ createdAt: -1 })
+      .limit(4)
+      .lean();
+
+    return response(res, true, "Blog fetched successfully", {
+      blog,
+      relatedArticles,
+      latestArticle,
+    });
+  } catch (error) {
+    return response(res, false, error.message);
+  }
+};
 module.exports = {
   createBlog,
   updateBlog,
@@ -504,6 +580,11 @@ module.exports = {
   getBlogById,
   deleteBlog,
   getBlogsByCategory,
+<<<<<<< HEAD
   getAllBlogsUnique
   
+=======
+  getAllBlogsUnique,
+  getBlogBySlug,
+>>>>>>> 830ac21 (done for blog)
 };
