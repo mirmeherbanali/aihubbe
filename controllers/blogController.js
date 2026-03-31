@@ -222,22 +222,225 @@ const getAllBlogs = async (req, res) => {
     return response(res, false, error.message);
   }
 };
+// const getAllBlogsUnique = async (req, res) => {
+//   const { search, status } = req.body;
 
-const getBlogById = async (req, res) => {
-  const { id } = req.body;
+//   try {
+//     let filter = {};
 
-  if (!id) return response(res, false, "Blog ID is required");
+//     if (status) filter.status = status;
 
-  const blog = await Blog.findById(id)
-    .populate("author", "firstName lastName")
-    .populate("categories", "categoryName")
-    .lean();
+//     if (search) {
+//       filter.blogTitle = { $regex: search, $options: "i" };
+//     }
 
-  if (!blog) return response(res, false, "Blog not found");
+//     const blogs = await Blog.find(filter)
+//       .populate("author", "authorName authorBio authorImage socialLinks")
+//       .populate("categories", "categoryName")
+//       .sort({ createdAt: -1 }) 
+//       .lean();
+//     let flattenedBlogs = [];
 
-  return response(res, true, "Blog fetched successfully", blog);
+//     blogs.forEach((blog) => {
+//       if (blog.categories && blog.categories.length > 0) {
+//         blog.categories.forEach((cat) => {
+//           const { categories, ...rest } = blog;
+
+//           flattenedBlogs.push({
+//             ...rest,
+//             category: cat,
+//           });
+//         });
+//       } else {
+//         flattenedBlogs.push({
+//           ...blog,
+//           category: null,
+//         });
+//       }
+//     });
+
+//     const uniqueMap = new Map();
+
+//     flattenedBlogs.forEach((item) => {
+//       if (!uniqueMap.has(item.blogTitle)) {
+//         uniqueMap.set(item.blogTitle, item);
+//       }
+//     });
+
+//     const uniqueBlogs = Array.from(uniqueMap.values());
+//     const finalBlogs = uniqueBlogs.slice(0, 4);
+
+  
+//     return response(
+//       res,
+//       true,
+//       "blogs fetched successfully",
+//       finalBlogs,
+//       finalBlogs.length
+//     );
+//   } catch (error) {
+//     console.error("Error in getAllBlogsUnique:", error);
+//     return response(res, false, error.message);
+//   }
+// };
+// const getBlogById = async (req, res) => {
+//   const { id } = req.body;
+
+//   if (!id) return response(res, false, "Blog ID is required");
+
+//   const blog = await Blog.findById(id)
+//     .populate("author", "firstName lastName")
+//     .populate("categories", "categoryName")
+//     .lean();
+
+//   if (!blog) return response(res, false, "Blog not found");
+
+//   return response(res, true, "Blog fetched successfully", blog);
+// };
+// const getBlogById = async (req, res) => {
+//   try {
+//     const { id, categoryName } = req.body;
+
+//     if (!id) return response(res, false, "Blog ID is required");
+
+//     // 1. Get main blog
+//     const blog = await Blog.findById(id)
+//       .populate("author", "firstName lastName")
+//       .populate("categories", "categoryName")
+//       .lean();
+
+//     if (!blog) return response(res, false, "Blog not found");
+
+//     let categoryFilterIds = [];
+
+//     // 2. If categoryName is passed → find matching categoryId
+//     if (categoryName) {
+//       const matchedCategory = blog.categories.find(
+//         cat => cat.categoryName === categoryName
+//       );
+
+//       if (matchedCategory) {
+//         categoryFilterIds.push(matchedCategory._id);
+//       }
+//     } else {
+//       // fallback → all categories
+//       categoryFilterIds = blog.categories.map(cat => cat._id);
+//     }
+
+//     // 3. Related Articles
+//     let relatedArticles = await Blog.find({
+//       _id: { $ne: id },
+//       categories: { $in: categoryFilterIds },
+//       status: "Published",
+//     })
+//       .populate("author", "firstName lastName")
+//       .populate("categories", "categoryName")
+//       .select("blogTitle slug featuredImage createdAt author categories")
+//       .sort({ createdAt: -1 })
+//       .limit(5)
+//       .lean();
+
+//     // 4. Show only matched category in response
+//     relatedArticles = relatedArticles.map(article => ({
+//       ...article,
+//       categories: article.categories.filter(cat =>
+//         categoryFilterIds.some(id => id.toString() === cat._id.toString())
+//       )
+//     }));
+
+//     return response(res, true, "Blog fetched successfully", {
+//       blog,
+//       relatedArticles,
+//     });
+
+//   } catch (error) {
+//     return response(res, false, error.message);
+//   }
+// };
+const getAllBlogsUnique = async (req, res) => {
+  try {
+    const blogs = await Blog.find({ status: "Published" })
+      .populate("author", "authorName authorBio authorImage socialLinks")
+      .populate("categories", "categoryName")
+      .sort({ createdAt: -1 }) 
+      .limit(4) 
+      .lean();
+
+    return response(res, true, "Latest blogs fetched successfully", blogs);
+  } catch (error) {
+    return response(res, false, error.message);
+  }
 };
+const getBlogById = async (req, res) => {
+  try {
+    const { id, categoryName } = req.body;
 
+    if (!id) return response(res, false, "Blog ID is required");
+    const blog = await Blog.findById(id)
+      .populate("author", "authorName")
+      .populate("categories", "categoryName")
+      .lean();
+
+    if (!blog) return response(res, false, "Blog not found");
+
+    let categoryFilterIds = [];
+
+    if (categoryName) {
+      const matchedCategory = blog.categories.find(
+        cat => cat.categoryName.toLowerCase() === categoryName.toLowerCase()
+      );
+
+      if (matchedCategory) {
+        categoryFilterIds.push(matchedCategory._id);
+      }
+    } else {
+      categoryFilterIds = blog.categories.map(cat => cat._id);
+    }
+
+
+    let relatedArticles = await Blog.find({
+      _id: { $ne: id },
+      categories: { $in: categoryFilterIds },
+      status: "Published",
+    })
+      .populate("author", "authorName")
+      .populate("categories", "categoryName")
+      .select("blogTitle slug featuredImage createdAt author categories")
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .lean();
+
+  
+    relatedArticles = relatedArticles.map(article => ({
+      ...article,
+      categories: article.categories.filter(cat =>
+        categoryFilterIds.some(id => id.toString() === cat._id.toString())
+      )
+    }));
+
+   
+    const latestArticle = await Blog.find({
+      _id: { $ne: id },
+      status: "Published",
+    })
+      .populate("author", "authorName")
+      .populate("categories", "categoryName")
+      .select("blogTitle slug featuredImage createdAt author categories")
+      .sort({ createdAt: -1 }) 
+      .limit(4) 
+      .lean();
+
+    
+    return response(res, true, "Blog fetched successfully", {
+      blog,
+      relatedArticles,
+      latestArticle, 
+    });
+
+  } catch (error) {
+    return response(res, false, error.message);
+  }
+};
 const deleteBlog = async (req, res) => {
   const { id, adminId } = req.body;
 
@@ -300,6 +503,7 @@ module.exports = {
   getAllBlogs,
   getBlogById,
   deleteBlog,
-  getBlogsByCategory
+  getBlogsByCategory,
+  getAllBlogsUnique
   
 };

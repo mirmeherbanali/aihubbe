@@ -8,6 +8,7 @@ const {
   getBlogById,
   deleteBlog,
   getBlogsByCategory,
+  getAllBlogsUnique,
 } = require("../controllers/blogController");
 
 const router = express.Router();
@@ -22,9 +23,10 @@ const upload = multer({
 
 router.post("/create",upload.fields([{ name: "featuredImage", maxCount: 1 }, ]), createBlog);
 router.post("/getAllBlogs", getAllBlogs);
+router.post("/getAllBlogsUnique", getAllBlogsUnique);
 router.post("/getBlogById", getBlogById);
 router.post("/getBlogsByCategory", getBlogsByCategory);
-router.put("/updateBlog",upload.fields([{ name: "featuredImage", maxCount: 1 },]),updateBlog);
+router.put("/updateBlogb",upload.fields([{ name: "featuredImage", maxCount: 1 },]),updateBlog);
 router.put("/deleteBlog", deleteBlog);
 
 module.exports = router;
