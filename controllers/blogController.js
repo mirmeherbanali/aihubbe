@@ -501,8 +501,6 @@ const getBlogBySlug = async (req, res) => {
     const { slug, categoryName } = req.body;
 
     if (!slug) return response(res, false, "Slug is required");
-
-    /* 🔥 FIND BLOG BY SLUG */
     const blog = await Blog.findOne({
       slug: slug,
       status: "Published",
@@ -512,8 +510,6 @@ const getBlogBySlug = async (req, res) => {
       .lean();
 
     if (!blog) return response(res, false, "Blog not found");
-
-    /* 🔥 CATEGORY FILTER */
     let categoryFilterIds = [];
 
     if (categoryName) {
@@ -529,7 +525,6 @@ const getBlogBySlug = async (req, res) => {
       categoryFilterIds = blog.categories.map((cat) => cat._id);
     }
 
-    /* 🔥 RELATED */
     let relatedArticles = await Blog.find({
       _id: { $ne: blog._id },
       categories: { $in: categoryFilterIds },
@@ -541,8 +536,6 @@ const getBlogBySlug = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(5)
       .lean();
-
-    /* 🔥 FILTER CATEGORY */
     relatedArticles = relatedArticles.map((article) => ({
       ...article,
       categories: article.categories.filter((cat) =>
@@ -552,7 +545,6 @@ const getBlogBySlug = async (req, res) => {
       ),
     }));
 
-    /* 🔥 LATEST */
     const latestArticle = await Blog.find({
       _id: { $ne: blog._id },
       status: "Published",
@@ -580,11 +572,6 @@ module.exports = {
   getBlogById,
   deleteBlog,
   getBlogsByCategory,
-<<<<<<< HEAD
-  getAllBlogsUnique
-  
-=======
   getAllBlogsUnique,
-  getBlogBySlug,
->>>>>>> 830ac21 (done for blog)
+  getBlogBySlug
 };
