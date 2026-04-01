@@ -9,6 +9,7 @@ const {
   deleteBlog,
   getBlogsByCategory,
   getAllBlogsUnique,
+  getBlogBySlug,
 } = require("../controllers/blogController");
 
 const router = express.Router();
@@ -28,5 +29,5 @@ router.post("/getBlogById", getBlogById);
 router.post("/getBlogsByCategory", getBlogsByCategory);
 router.put("/updateBlogb",upload.fields([{ name: "featuredImage", maxCount: 1 },]),updateBlog);
 router.put("/deleteBlog", deleteBlog);
-
+router.post("/getBlogBySlug", getBlogBySlug);
 module.exports = router;
