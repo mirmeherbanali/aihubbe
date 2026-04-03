@@ -45,5 +45,10 @@ const toolSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+toolSchema.index({ toolName: "text" });
+toolSchema.index({ createdAt: -1 });
+toolSchema.index({ status: 1 });
+toolSchema.index({ category: 1 });
+toolSchema.index({ userId: 1 });
 
 module.exports = mongoose.model("Tool", toolSchema, "tools");
