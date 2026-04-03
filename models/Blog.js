@@ -95,5 +95,9 @@ const blogSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
-
+blogSchema.index({ createdAt: -1 });
+blogSchema.index({ status: 1 });
+blogSchema.index({ blogTitle: "text" });
+blogSchema.index({ categories: 1 });
+blogSchema.index({ author: 1 });
 module.exports = mongoose.model("Blog", blogSchema, "blogs");

@@ -49,4 +49,7 @@ const categorySchema = new mongoose.Schema(
   }
 );
 
+categorySchema.index({ slug: 1 });
+categorySchema.index({ status: 1 });
+categorySchema.index({ createdAt: -1 });
 module.exports = mongoose.model("Category", categorySchema);
